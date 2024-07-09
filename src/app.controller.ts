@@ -100,6 +100,11 @@ export class AppController {
   async reportHoursWorked( @Body() data: any, @Param('entityName') entityName: any): Promise<any> {
     return this.reportsService.reportHoursworked(entityName,data);
   }
+  //REPORTE GERENCIAL
+  @Patch('report-managerial/:entityName')
+  async reportManagerial( @Body() data: any, @Param('entityName') entityName: any): Promise<any> {
+    return this.reportsService.reportManagerial(entityName,data);
+  }
 
   // INDEX
   @Get()

@@ -1,14 +1,14 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import { DynamicEntityService } from '../database/db.entities/dynamicentity.service';
+import { DynamicEntityService,EventsService } from '../database/db.service';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Between, FindManyOptions, In, LessThan, MoreThan, Repository } from 'typeorm';
-import { parse } from 'date-fns';
 
 @Injectable()
 export class ReportsService {
   constructor(
     private readonly dynamicEntityService: DynamicEntityService,
+    private readonly eventsService: EventsService,
   ) {
   }
   /* ---------------- FUNCIONES FuelConsumption ----------------*/
@@ -35,7 +35,7 @@ export class ReportsService {
       ];
       const join = {
         table: 'MobileUnities',
-        condition: 'FuelConsumption.unity_id = MobileUnities.id'
+        condition: 'FuelConsumption.unityId = MobileUnities.id'
       };
       
       const latestFuelConsumption = await this.dynamicEntityService.searchCampWithJoin(
@@ -195,11 +195,11 @@ export class ReportsService {
     }
   }
 
-  async Consult(created_at: Date, unity_id: number): Promise<any> {
+  async Consult(created_at: Date, unityId: number): Promise<any> {
     
-    let dateA = await this.dynamicEntityService.search('FuelConsumption', { createdAt: LessThan(created_at), unityId : unity_id },{ createdAt: 'DESC' });
+    let dateA = await this.dynamicEntityService.search('FuelConsumption', { createdAt: LessThan(created_at), unityId : unityId },{ createdAt: 'DESC' });
 
-    let dateP = await this.dynamicEntityService.search('FuelConsumption', { createdAt: MoreThan(created_at), unityId : unity_id }, { createdAt: 'ASC' });
+    let dateP = await this.dynamicEntityService.search('FuelConsumption', { createdAt: MoreThan(created_at), unityId : unityId }, { createdAt: 'ASC' });
     dateA = dateA[0];
     dateP = dateP[0];
 
@@ -207,76 +207,6 @@ export class ReportsService {
   }
 
   /* ---------------- FIN FUNCIONES FuelConsumption -----------------------------*/
-
-  /* ---------------- INICIO REPORTES -----------------------------*/
-  // async reportHoursworked(request: any, type: number): Promise<any> {
-  //   const mobileUnitiesIds = request.mobileUnitiesIds;
-  //   const startDate = request.startDate;
-  //   const endDate = request.endDate;
-  
-  //   const rst = await this.dynamicEntityService.search(
-  //     'Works', // entityName
-  //     {
-  //       unityId: In(mobileUnitiesIds),
-  //       type: type,
-  //       start: Between(startDate + ' 00:00:00', endDate + ' 23:59:59')
-  //     }
-  //   );
-  //   return rst;
-  //   if (!rst) {
-  //     return [{'success': false, 'message': 'Sin datos para mostrar'}];
-  //   }
-  
-  //   let array = [];
-  //   let response = [];
-  //   let label = 'Worked';
-  
-  //   if (type == 2) {
-  //     label = 'Rest';
-  //   }
-  
-  //   rst.forEach((result) => {
-  //     const turnOn = new Date(result.start);
-  //     const turnOff = new Date(result.end);
-  
-  //     const diffInMs = turnOff.getTime() - turnOn.getTime();
-  //     const time = this.formatTime(diffInMs);
-  
-  //     array.push({
-  //       unityId: result.unityId,
-  //       ['hour' + label]: time,
-  //       ['date' + label]: turnOn.toLocaleDateString(),
-  //       numberHour: this.convertTimeToDecimal(time)
-  //     });
-  //   });
-  
-  //   const object = {};
-  
-  //   array.forEach((item) => {
-  //     const key = `${item.unityId}${item['date' + label]}`;
-  //     if (!object[key]) {
-  //       object[key] = {
-  //         unityId: item.unityId,
-  //         ['date' + label]: item['date' + label],
-  //         ['hour' + label]: [item['hour' + label]],
-  //         numberHour: item.numberHour
-  //       };
-  //     } else {
-  //       object[key]['hour' + label].push(item['hour' + label]);
-  //       object[key].numberHour += item.numberHour;
-  //     }
-  //   });
-  
-  //   Object.values(object).forEach((item:any) => {
-  //     item['hour' + label] = this.sumTimes(item['hour' + label]);
-  //     item.numberHour = this.convertirAHorasDecimales(item['hour' + label]);
-  //   });
-  
-  //   response.push(Object.values(object));
-  //   console.log(response);
-    
-  //   return response;
-  // }
   
   async reportHoursworked(entityName: any,request: any): Promise<any> {
     const mobileUnitiesIds = request.mobileUnitiesIds;
@@ -284,58 +214,151 @@ export class ReportsService {
     const endDate = request.endDate;
     const type = request.type;
     let actualDate = new Date(startDate);
-    let horasTrabajadas = [];
-
-    const g = {
-      unityId: In(mobileUnitiesIds),
-      type: type,
-      start: Between(startDate + ' 00:00:00', endDate + ' 23:59:59')
-    }; 
-    const f = ['start','end','unityId'];
-    const rst = await this.dynamicEntityService.searchCamp(
-      entityName, // entityName
-      g,
-      f
-    );
-    if (!rst) {
-      return [{'success': false, 'message': 'Sin datos para mostrar'}];
+    let horasTrabajadas = {};
+    let dataHoras = {};
+    let dataHorasTotal = {};
+    let totalMiliseconds = 0;
+    let totalTimeMiliseconds = 0;
+    let time;
+    let timeTotal;
+    
+    while (actualDate <= new Date(endDate)) {
+      time = actualDate;
+  
+      for (const unity of mobileUnitiesIds) {
+        const condicion = {
+          unityId: unity,
+          type: type,
+          start: MoreThan(time)
+        }; 
+        horasTrabajadas[unity] = [];
+        if(!dataHorasTotal[unity]){
+          dataHorasTotal[unity] = 0;
+        }
+        const field = ['start','end','unityId'];
+        const datos = await this.dynamicEntityService.searchCamp(
+          entityName, // entityName
+          condicion,
+          field
+        );
+  
+        totalMiliseconds = 0;
+        datos.forEach((result) => {
+          const diffInMs = result.end.getTime() - result.start.getTime();
+          totalMiliseconds+=diffInMs;
+        });
+  
+        const timeConvert = await this.dynamicEntityService.formatTime(totalMiliseconds);
+        dataHoras[time]=timeConvert;
+        actualDate = new Date(actualDate.getTime() + 24 * 60 * 60 * 1000);
+        horasTrabajadas[unity].push(dataHoras);
+        dataHorasTotal[unity] += totalMiliseconds;
+        totalMiliseconds = 0;
+      };
+    } 
+    for (const unity of mobileUnitiesIds) {
+      const timeConvert = await this.dynamicEntityService.formatTime(dataHorasTotal[unity]);
+      const dataHorasT = {...horasTrabajadas[unity][horasTrabajadas[unity].length - 1], total: timeConvert };
+      horasTrabajadas[unity][horasTrabajadas[unity].length - 1] = dataHorasT;
     }
     
-    //while (actualDate <= new Date(endDate)) {
-    
-      const time = parse(startDate, 'yyyy-MM-dd', new Date);
-      console.log(time);
-      
-      // Incrementar un día
-      const condicion = {
-        unityId: In(mobileUnitiesIds),
-        type: type,
-        start: Between(time + ' 00:00:00', time + ' 23:59:59')
-      }; 
-      const field = ['start','end','unityId'];
-      const datos = await this.dynamicEntityService.searchCamp(
-        entityName, // entityName
-        condicion,
-        field
-      );
-      console.log(datos);
-      
-      datos.forEach((result) => {
-        const diffInMs = result.end.getTime() - result.start.getTime();
-        const time = diffInMs;
-        console.log(result.end);
-
-        horasTrabajadas.push({
-          plate: result.unityId, //Falta traerlo por join
-          horasT: time
-          
-        });
-        
-      });
-      //actualDate.setDate(actualDate.getDate() + 1);
-    //}
-
-    
-    return [];
+    return horasTrabajadas;
   }
+
+  async reportManagerial(entityName: any,request: any ): Promise<any> {
+
+    let report = request.report;
+    let mobileUnitiesIds = request.mobileUnitiesIds;
+    let startDate = request.startDate;
+    let endDate = request.endDate;
+    let dataArray = {};
+    let array = [];
+    let titleArray = {};
+    let queryData;
+    let unityData;
+
+    const condicion = {
+      id: In(mobileUnitiesIds)
+    };
+    const field = ['id','plate'];
+
+    const datos = await this.dynamicEntityService.searchCamp(
+      entityName, // entityName
+      condicion,
+      field
+    );
+
+    for (const unityId of datos) {
+      dataArray[unityId.id] = [];
+      titleArray = [{'FechaInicio': 'Fecha inicio', 'FechaFinal' : 'Fecha final', 'Placa' : 'Activo movil'}];
+      let id = unityId.id;
+      unityData = { 'FechaInicio': startDate, 'FechaFinal': endDate, 'Placa': unityId.plate };      
+      for (const reportData of report) {
+      console.log(report);
+
+        if( reportData.info != null){
+          let events = reportData.info.split(',');
+          for (const eventId of events) {
+            
+            queryData = await this.createQuery(reportData.typeReport, eventId, unityId.id, startDate, endDate);
+            let title = queryData.title;
+            let value = queryData.value;
+            unityData[title] = value;
+            
+            dataArray[unityId.id].push(unityData);
+            // console.log(dataArray);
+          };
+        }
+      };
+    };
+    return dataArray;
+  }
+
+  async createQuery(typeRepot,typeData,mobileUnitiesIds,startDate,endDate): Promise<any> {
+    let resultArray = {};
+    let eventTypeName = await this.eventsService.eventTypeName();
+    let consumptionTypeName = ['Galones consumidos','Rendimiento'];
+    let hoursName = {1:'Horas Trabajadas',2:'Horas en reposo'};
+    let specialCharacter = false;
+    let title;
+    let query;
+    
+    const request = {
+      startDate: startDate,
+      endDate: endDate,
+      mobileUnitiesIds: [mobileUnitiesIds],
+      eventTypeId: typeData,
+      type: typeData
+    };
+
+    switch (typeRepot) {
+      //Reporte general
+      case 1:
+        query = await this.eventsService.queryMobileEvent(request);
+        title = eventTypeName[typeData];
+        if (!query){
+          query = 0;
+        }
+        break;
+       //horas trabajadas
+       case 2:
+        query = await this.reportHoursworked('Works', request);
+        query = query[mobileUnitiesIds][0].total;
+        title = hoursName[typeData];
+        break;
+    
+      default:
+        break;
+    }
+    
+    if (!specialCharacter) {
+        resultArray['title'] = title;
+        resultArray['value'] = query;
+    }
+    // console.log(resultArray);
+
+    return resultArray;
+    
+  }
+  
 }

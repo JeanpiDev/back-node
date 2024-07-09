@@ -24,7 +24,7 @@ import { GeographicalResourceNotification,GeographicalResourcesNotifications,Mob
 import { FormStructureCustomer,FuelConsumption,ScheduledReports,SharePreoperational,TemporalWorks,Works } from './modules/database/db.entities/db.entities';
 import { Parameters,WebserviceBrand,WebserviceLine,WebserviceLogs,WebserviceTypeMobileUnity,Consultants,DocumentTypes,ModelHasPermissions,ModelHasRoles,Permissions,RoleHasPermissions,Roles,Templates,UserEmailTemplates,UserScheduledEmails,MobileUnityBrands,MobileUnityClass,MobileUnityLine,MobileUnityStatus,MobileUnityStatusHistory,MobileUnitySubclass,MobileUnityType,EventTypes,Logs,Plans,SimcardLogs,SimcardPlan,Simcards } from './modules/database/db.entities/db.entities';
 
-import { ReportsService } from "./modules/m8_reports/m8_reports.service";
+import { ReportsService,EventsService } from "./modules/database/db.service";
 
 @Module({
   imports: [
@@ -35,6 +35,6 @@ import { ReportsService } from "./modules/m8_reports/m8_reports.service";
     TypeOrmModule.forFeature([Customers,Users,ContactTypes,ContactsEmergency,DriversDallas, CustomersBlocked,Contacts,UsersTypes,EventDriverValidator,MobileUnityDrivers,Brands,DevicePlotDeviceType,Devices,DevicePlotHeaderTypes,DevicePlotHeaders,DevicePlots,DeviceTests,DeviceTypeCommands,DeviceTypes,DeviceUser,CommandLog,CommandPending,CommandsList,CommandsTosend,Alerts,CentralAlerts,CentralSilencedAlerts,Novelties,NoveltyTypes,CarrerasCalles,Cities,Departments,Directions,GeographicalEvents,GeographicalResources,Municipios,Rutograma,MobileUnities,MobileUnityDallasKeys,MobileUnityDriver,MobileUnityGroups,ShareTracking,HabitosConduccion,MobileUnityAlerts,MobileUnityEvents,MobileUnityLastEvents,NotificationUnity,Preoperacional,GeographicalResourceNotification,GeographicalResourcesNotifications,MobileUnityEventType,Notifications,UserNotifications,FormStructureCustomer,FuelConsumption,ScheduledReports,SharePreoperational,TemporalWorks,Works,Parameters,WebserviceBrand,WebserviceLine,WebserviceLogs,WebserviceTypeMobileUnity,Consultants,DocumentTypes,ModelHasPermissions,ModelHasRoles,Permissions,RoleHasPermissions,Roles,Templates,UserEmailTemplates,UserScheduledEmails,MobileUnityBrands,MobileUnityClass,MobileUnityLine,MobileUnityStatus,MobileUnityStatusHistory,MobileUnitySubclass,MobileUnityType,EventTypes,Logs,Plans,SimcardLogs,SimcardPlan,Simcards]),
   ],
   controllers: [AppController],
-  providers: [AppService, SchedulerService, DynamicEntityService, FuelConsumption, ReportsService, Registry], 
+  providers: [AppService, SchedulerService, DynamicEntityService, FuelConsumption, ReportsService, Registry, EventsService], 
 })
 export class AppModule {}

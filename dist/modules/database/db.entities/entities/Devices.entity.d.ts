@@ -1,0 +1,38 @@
+import { DeviceTests } from "./DeviceTests.entity";
+import { DeviceUser } from "./DeviceUser.entity";
+import { Customers } from "./Customers.entity";
+import { DeviceTypes } from "./DeviceTypes.entity";
+import { MobileUnityLine } from "./MobileUnityLine.entity";
+import { Simcards } from "./Simcards.entity";
+import { MobileUnities } from "./MobileUnities.entity";
+import { SimcardLogs } from "./SimcardLogs.entity";
+export declare class Devices {
+    id: number;
+    deviceTypeId: number;
+    customerId: number;
+    lineId: number | null;
+    simcardId: number | null;
+    imei: string | null;
+    name: string;
+    engineReportTimeOn: number | null;
+    engineReportTimeOff: number | null;
+    speeding: number | null;
+    oilConsumption: number | null;
+    firewall: string | null;
+    tcpPort: string | null;
+    status: number;
+    property: number | null;
+    ipLocal: string | null;
+    portRemote: string | null;
+    ipRemote: string | null;
+    lastConnect: Date | null;
+    statusConnect: boolean;
+    deviceTests: DeviceTests[];
+    deviceUsers: DeviceUser[];
+    customer: Customers;
+    deviceType: DeviceTypes;
+    line: MobileUnityLine;
+    simcard: Simcards;
+    mobileUnities: MobileUnities[];
+    simcardLogs: SimcardLogs[];
+}

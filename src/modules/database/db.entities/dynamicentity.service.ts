@@ -96,6 +96,19 @@ export class DynamicEntityService {
     };
     return this.repository.find(options);
   }
+
+  //Trae toda la informacion de un registro, especificando los campos que se quieren
+  async searchCampAll(entityName: string, fields: string[], order?: any): Promise<any[]> {
+    if (!order) {
+      order = { id: 'DESC' };
+    }
+    this.repository = await this.getRepositoryByName(entityName);
+    const options: FindManyOptions<any> = {
+      select: fields,
+      order: order
+    };
+    return this.repository.find(options);
+  }
   //Busca un registro con la informacion de las llaves foraneas
   async searchCampWithRelations(entityName: string, conditions: any, fields: string[], relations: string[]): Promise<any[]> {
     
@@ -144,6 +157,15 @@ export class DynamicEntityService {
     this.repository = await this.getRepositoryByName(entityName);
     const deleteResult = await this.repository.delete(id);
     return deleteResult.affected > 0;
+  }
+
+  /*****************************   CALCULOS    *************************************************** */
+  //Convuierte milisegundos a horas y minutos
+  async formatTime(totalMiliseconds: number): Promise<string> {
+    const hours = Math.floor(totalMiliseconds / 3600000);
+    const minutes = Math.floor((totalMiliseconds % 3600000) / 60000);
+  
+    return `${hours}H y ${minutes}M`;
   }
 
 }
